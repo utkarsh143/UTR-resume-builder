@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resume Builder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <!-- html2canvas & jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #e5e7eb;
+      color: #111827;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    h1.page-title {
+      text-align: center;
+      margin-bottom: 6px;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .sub-heading {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .app {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .panel {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 14px 35px rgba(15, 23, 42, 0.18);
+      padding: 16px 18px;
+    }
+
+    .form-panel {
+      flex: 1;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .preview-panel {
+      flex: 1.3;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 14px 0 8px;
+      border-left: 3px solid #4f46e5;
+      padding-left: 8px;
+      color: #111827;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: #4b5563;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      padding: 7px 9px;
+      font-size: 13px;
+      outline: none;
+      margin-bottom: 8px;
+      background: #f9fafb;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.2);
+      background: #ffffff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: 1.2fr 1.4fr;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 6px;
+    }
+
+    .download-controls {
+      display: grid;
+      grid-template-columns: 1.2fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      border-radius: 999px;
+      padding: 8px 16px;
+      border: none;
+      background: #4f46e5;
+      color: #ffffff;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.25);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(79, 70, 229, 0.3);
+      background: #4338ca;
+    }
+
+    /* ====== Resume preview base layout (sidebar style) ====== */
+
+    .resume-wrapper {
+      width: 794px;
+      aspect-ratio: 794 / 1123;
+      border-radius: 10px;
+      padding: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .resume-page {
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.3);
+      font-size: 11px;
+    }
+
+    .resume-header {
+      padding: 18px 28px;
+      border-bottom: 2px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .avatar-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 999px;
+      background: #cbd5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 600;
+      color: #1f2937;
+      flex-shrink: 0;
+    }
+
+    .name-block h1 {
+      font-size: 24px;
+      margin-bottom: 4px;
+      letter-spacing: 0.08em;
+    }
+
+    .resume-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: #6b7280;
+    }
+
+    .resume-main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      min-height: 0;
+    }
+
+    .resume-sidebar {
+      padding: 18px 18px 18px 28px;
+      border-right: 1px solid #e5e7eb;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: #f9fafb;
+    }
+
+    .resume-content {
+      padding: 18px 28px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .resume-section {
+      margin-bottom: 4px;
+    }
+
+    .resume-section h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 4px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 2px;
+    }
+
+    .sidebar-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      margin-bottom: 4px;
+    }
+
+    .sidebar-list,
+    .bullet-list {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .sidebar-list li,
+    .bullet-list li {
+      margin-bottom: 3px;
+      line-height: 1.4;
+    }
+
+    .summary-text,
+    .objective-text,
+    .education-text,
+    .projects-text,
+    .experience-text {
+      font-size: 11px;
+      line-height: 1.5;
+      color: #374151;
+    }
+
+    .skills-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 3px;
+    }
+
+    .skill-pill {
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      padding: 2px 8px;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .contact-text {
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 1024px) {
+      .app {
+        flex-direction: column;
+      }
+      .resume-wrapper {
+        transform: scale(0.85);
+        transform-origin: top center;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      .resume-wrapper {
+        transform: scale(0.7);
+      }
+      .top-row {
+        grid-template-columns: 1fr;
+      }
+      .download-controls {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =============== THEMES (your styles adapted) =============== */
+
+    /* 1️⃣ theme-classic */
+    .theme-classic {
+      background: #f8fafc;
+      color: #000;
+    }
+    .theme-classic .resume-header {
+      border-bottom: 3px solid #000;
+    }
+    .theme-classic .resume-page h1 {
+      font-family: "Georgia", serif;
+      text-transform: uppercase;
+    }
+    .theme-classic .resume-section h2 {
+      border-bottom: 1px solid #ccc;
+    }
+
+    /* 2️⃣ theme-minimal */
+    .theme-minimal {
+      background: #fafafa;
+      color: #333;
+    }
+    .theme-minimal .resume-page {
+      border-left: 5px solid #444;
+      background: #ffffff;
+    }
+    .theme-minimal .resume-page h1 {
+      font-weight: 300;
+    }
+
+    /* 3️⃣ theme-modern */
+    .theme-modern {
+      background: #111;
+      color: #eee;
+    }
+    .theme-modern .resume-page {
+      background: #1a1a1a;
+      color: #eaeaea;
+      border-radius: 12px;
+    }
+    .theme-modern .resume-page h1 {
+      color: #00d4ff;
+    }
+
+    /* 4️⃣ theme-elegant */
+    .theme-elegant {
+      background: #fdfaf6;
+      color: #222;
+      font-family: "Times New Roman", serif;
+    }
+    .theme-elegant .resume-page {
+      border: 1px solid #ccc;
+      padding: 0;
+    }
+    .theme-elegant .resume-header {
+      padding: 20px 30px;
+    }
+    .theme-elegant .resume-page h1 {
+      color: #a67c52;
+    }
+
+    /* 5️⃣ theme-tech */
+    .theme-tech {
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    .theme-tech .resume-page {
+      border-left: 4px solid #38bdf8;
+      background: #020617;
+    }
+    .theme-tech .resume-page h1 {
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+
+    /* 6️⃣ theme-creative */
+    .theme-creative {
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+    }
+    .theme-creative .resume-page {
+      background: #fff;
+      border-radius: 16px;
+      color: #333;
+    }
+    .theme-creative .resume-page h1 {
+      color: #ff6b6b;
+      font-family: "Comic Sans MS", cursive;
+    }
+
+    /* 7️⃣ theme-compact */
+    .theme-compact .resume-page {
+      padding: 0;
+      font-size: 10px;
+    }
+    .theme-compact .resume-header {
+      padding: 14px 22px;
+    }
+    .theme-compact .resume-main {
+      grid-template-columns: 200px minmax(0, 1fr);
+    }
+    .theme-compact .resume-page h1 {
+      font-size: 20px;
+    }
+
+    /* 8️⃣ theme-photo */
+    .theme-photo .resume-header {
+      background: url("https://picsum.photos/800/200?blur") no-repeat center/cover;
+      color: white;
+      border-bottom: none;
+    }
+    .theme-photo .resume-header .avatar-circle {
+      background: rgba(15,23,42,0.4);
+      color: #fff;
+    }
+    .theme-photo .resume-page h1 {
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* 9️⃣ theme-executive */
+    .theme-executive {
+      background: #e6ebef;
+      color: #222;
+    }
+    .theme-executive .resume-page {
+      border-left: 5px solid #2a4365;
+      background: #fff;
+    }
+    .theme-executive .resume-page h1 {
+      color: #2a4365;
+    }
+
+    /* 🔟 theme-timeline */
+    .theme-timeline .experience-text {
+      position: relative;
+      padding-left: 20px;
+      margin-left: 20px;
+      border-left: 3px solid #0077b6;
+    }
+    .theme-timeline .experience-text::before {
+      content: "";
+      position: absolute;
+      left: -7px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      background: #0077b6;
+      border-radius: 50%;
+    }
+
+    /* 11️⃣ theme-grid */
+    .theme-grid .resume-main {
+      grid-template-columns: 1.3fr 2fr;
+    }
+
+    /* 12️⃣ theme-bold */
+    .theme-bold {
+      background: #111;
+      color: #fff;
+    }
+    .theme-bold .resume-page {
+      background: #222;
+      border-left: 10px solid #fbbf24;
+    }
+    .theme-bold .resume-page h1 {
+      color: #fbbf24;
+      text-transform: uppercase;
+    }
+
+    /* 13️⃣ theme-serif */
+    .theme-serif {
+      background: #f4f0ea;
+      color: #222;
+      font-family: "Merriweather", serif;
+    }
+    .theme-serif .resume-page h1 {
+      color: #6b4226;
+    }
+
+    /* 14️⃣ theme-infographic */
+    .theme-infographic .resume-section h2 {
+      border-left: 5px solid #06d6a0;
+      padding-left: 10px;
+      border-bottom: none;
+    }
+    .theme-infographic .bullet-list li::before {
+      content: "•";
+      color: #06d6a0;
+      margin-right: 6px;
+    }
+
+    /* 15️⃣ theme-fresh */
+    .theme-fresh {
+      background: #ecfdf5;
+      color: #064e3b;
+    }
+    .theme-fresh .resume-page {
+      border-left: 5px solid #10b981;
+      background: #fff;
+    }
+    .theme-fresh .resume-page h1 {
+      color: #047857;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">Resume Builder</h1>
+  <p class="sub-heading">Sidebar layout like modern templates – choose a theme, fill details, preview live, and save with PDF size options.</p>
+
+  <div class="app">
+    <!-- LEFT: FORM -->
+    <div class="panel form-panel">
+      <div class="top-row">
+        <div>
+          <label for="themeSelect">Theme</label>
+          <select id="themeSelect">
+            <option value="classic">Classic</option>
+            <option value="minimal">Minimal</option>
+            <option value="modern">Modern</option>
+            <option value="elegant">Elegant</option>
+            <option value="tech">Tech</option>
+            <option value="creative">Creative</option>
+            <option value="compact">Compact</option>
+            <option value="photo">Photo Header</option>
+            <option value="executive">Executive</option>
+            <option value="timeline">Timeline</option>
+            <option value="grid">Grid</option>
+            <option value="bold">Bold</option>
+            <option value="serif">Serif</option>
+            <option value="infographic">Infographic</option>
+            <option value="fresh">Fresh</option>
+          </select>
+        </div>
+
+        <div class="download-controls">
+          <div>
+            <label for="sizeSelect">Save resume (target size)</label>
+            <select id="sizeSelect">
+              <option value="2">≈ 2 MB or less</option>
+              <option value="5" selected>≈ 5 MB</option>
+              <option value="8">≈ 8 MB</option>
+              <option value="max">Max quality</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button id="downloadBtn" type="button">⬇ Save as PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-title">Basic Info</h3>
+      <div class="two-col">
+        <div>
+          <label for="nameInput">Full Name</label>
+          <input id="nameInput" data-field="name" type="text" placeholder="e.g. Riya Sharma" />
+        </div>
+        <div>
+          <label for="titleInput">Headline / Job Title</label>
+          <input id="titleInput" data-field="title" type="text" placeholder="Computer Science Graduate" />
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <label for="emailInput">Email</label>
+          <input id="emailInput" data-field="email" type="email" placeholder="you@example.com" />
+        </div>
+        <div>
+          <label for="phoneInput">Phone</label>
+          <input id="phoneInput" data-field="phone" type="text" placeholder="+91-XXXXXXXXXX" />
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <label for="locationInput">Location</label>
+          <input id="locationInput" data-field="location" type="text" placeholder="City, State" />
+        </div>
+        <div>
+          <label for="linkedinInput">LinkedIn</label>
+          <input id="linkedinInput" data-field="linkedin" type="text" placeholder="linkedin.com/in/username" />
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <label for="githubInput">GitHub / Portfolio</label>
+          <input id="githubInput" data-field="github" type="text" placeholder="github.com/username" />
+        </div>
+        <div>
+          <label for="websiteInput">Website (optional)</label>
+          <input id="websiteInput" data-field="website" type="text" placeholder="your-portfolio.com" />
+        </div>
+      </div>
+
+      <h3 class="section-title">Career Objective</h3>
+      <textarea id="objectiveInput" data-field="objective" placeholder="Motivated graduate eager to apply programming and analytical skills..."></textarea>
+
+      <h3 class="section-title">Key Skills (bullets)</h3>
+      <textarea id="keySkillsInput" data-field="keySkills" placeholder="Programming: Python, Java, C++&#10;Data Analysis: Excel, SQL, Power BI&#10;Communication & Teamwork"></textarea>
+
+      <h3 class="section-title">Experience</h3>
+      <textarea id="experienceInput" data-field="experience" placeholder="Intern, Company Name – 2024&#10;• Worked on ...&#10;• Achieved ..."></textarea>
+
+      <h3 class="section-title">Education</h3>
+      <textarea id="educationInput" data-field="education" placeholder="B.Tech in Computer Science | XYZ University | 2024&#10;CGPA: 8.5/10"></textarea>
+
+      <h3 class="section-title">Academic / Personal Projects</h3>
+      <textarea id="projectsInput" data-field="projects" placeholder="Library Management System (Java): Developed ...&#10;Data Visualization Dashboard (Power BI): Built ..."></textarea>
+
+      <h3 class="section-title">Technical Skills (pills in sidebar)</h3>
+      <label for="skillsInput">Skills (comma separated)</label>
+      <input id="skillsInput" data-field="skills" type="text" placeholder="Python, Java, SQL, HTML, CSS, JS" />
+
+      <h3 class="section-title">Certifications</h3>
+      <textarea id="certificationsInput" data-field="certifications" placeholder="Google Data Analytics Professional Certificate&#10;Advanced Excel (Microsoft)"></textarea>
+
+      <h3 class="section-title">Languages</h3>
+      <textarea id="languagesInput" data-field="languages" placeholder="English (Fluent)&#10;Hindi (Fluent)"></textarea>
+    </div>
+
+    <!-- RIGHT: PREVIEW -->
+    <div class="panel preview-panel">
+      <div id="resumeWrapper" class="resume-wrapper theme-classic">
+        <div id="resumePage" class="resume-page">
+          <header class="resume-header">
+            <div class="avatar-circle" id="avatarCircle">RS</div>
+            <div class="name-block">
+              <h1 id="pvName">YOUR NAME</h1>
+              <div id="pvTitle" class="resume-title">COMPUTER SCIENCE GRADUATE</div>
+            </div>
+          </header>
+
+          <div class="resume-main">
+            <!-- SIDEBAR -->
+            <aside class="resume-sidebar">
+              <section class="resume-section">
+                <div class="sidebar-title">Contact</div>
+                <p id="pvContact" class="contact-text">
+                  you@example.com<br />
+                  +91-XXXXXXXXXX<br />
+                  City, State
+                </p>
+                <ul id="pvLinks" class="sidebar-list">
+                  <li>LinkedIn: linkedin.com/in/username</li>
+                </ul>
+              </section>
+
+              <section class="resume-section">
+                <div class="sidebar-title">Tech Skills</div>
+                <div id="pvSkills" class="skills-pills">
+                  <span class="skill-pill">Python</span>
+                  <span class="skill-pill">Java</span>
+                  <span class="skill-pill">SQL</span>
+                </div>
+              </section>
+
+              <section class="resume-section">
+                <div class="sidebar-title">Certifications</div>
+                <ul id="pvCertifications" class="sidebar-list">
+                  <li>Google Data Analytics</li>
+                </ul>
+              </section>
+
+              <section class="resume-section">
+                <div class="sidebar-title">Languages</div>
+                <ul id="pvLanguages" class="sidebar-list">
+                  <li>English (Fluent)</li>
+                  <li>Hindi (Fluent)</li>
+                </ul>
+              </section>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="resume-content">
+              <section class="resume-section">
+                <h2>Career Objective</h2>
+                <p id="pvObjective" class="objective-text">
+                  Motivated graduate eager to apply programming and analytical skills in a dynamic organization.
+                </p>
+              </section>
+
+              <section class="resume-section">
+                <h2>Key Skills</h2>
+                <ul id="pvKeySkills" class="bullet-list">
+                  <li>Programming: Python, Java, C++</li>
+                  <li>Data Analysis: Excel, SQL, Power BI</li>
+                  <li>Communication & Teamwork</li>
+                </ul>
+              </section>
+
+              <section class="resume-section">
+                <h2>Education</h2>
+                <p id="pvEducation" class="education-text">
+                  B.Tech in Computer Science | XYZ University | 2024<br />
+                  CGPA: 8.5/10
+                </p>
+              </section>
+
+              <section class="resume-section">
+                <h2>Experience</h2>
+                <p id="pvExperience" class="experience-text">
+                  Add internships, jobs, roles, responsibilities, and achievements here.
+                </p>
+              </section>
+
+              <section class="resume-section">
+                <h2>Academic / Personal Projects</h2>
+                <p id="pvProjects" class="projects-text">
+                  Library Management System (Java) – Developed ...<br />
+                  Data Visualization Dashboard (Power BI) – Built ...
+                </p>
+              </section>
+            </main>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Live mapping =====
+    const mapping = {
+      name: document.getElementById("pvName"),
+      title: document.getElementById("pvTitle"),
+      objective: document.getElementById("pvObjective"),
+      experience: document.getElementById("pvExperience"),
+      education: document.getElementById("pvEducation"),
+      projects: document.getElementById("pvProjects")
+    };
+
+    function getInitials(name) {
+      if (!name.trim()) return "RS";
+      const parts = name.trim().split(" ");
+      const first = parts[0]?.[0] || "";
+      const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+      return (first + last).toUpperCase();
+    }
+
+    function updateAvatar() {
+      const nameVal = document.getElementById("nameInput").value || "Riya Sharma";
+      document.getElementById("avatarCircle").textContent = getInitials(nameVal);
+    }
+
+    function updateContactAndLinks() {
+      const email = document.getElementById("emailInput").value.trim() || "you@example.com";
+      const phone = document.getElementById("phoneInput").value.trim() || "+91-XXXXXXXXXX";
+      const loc   = document.getElementById("locationInput").value.trim() || "City, State";
+      const linkedin = document.getElementById("linkedinInput").value.trim();
+      const github   = document.getElementById("githubInput").value.trim();
+      const website  = document.getElementById("websiteInput").value.trim();
+
+      document.getElementById("pvContact").innerHTML = `${email}<br>${phone}<br>${loc}`;
+
+      const linksUl = document.getElementById("pvLinks");
+      linksUl.innerHTML = "";
+      if (linkedin) {
+        const li = document.createElement("li");
+        li.textContent = `LinkedIn: ${linkedin}`;
+        linksUl.appendChild(li);
+      }
+      if (github) {
+        const li = document.createElement("li");
+        li.textContent = `GitHub: ${github}`;
+        linksUl.appendChild(li);
+      }
+      if (website) {
+        const li = document.createElement("li");
+        li.textContent = `Website: ${website}`;
+        linksUl.appendChild(li);
+      }
+    }
+
+    function updateSkillsPills() {
+      const skillsStr = document.getElementById("skillsInput").value;
+      const skillsArr = skillsStr.split(",").map(s => s.trim()).filter(Boolean);
+      const pvSkills = document.getElementById("pvSkills");
+      pvSkills.innerHTML = "";
+
+      const list = skillsArr.length ? skillsArr : ["Python", "Java", "SQL"];
+      list.forEach(skill => {
+        const span = document.createElement("span");
+        span.className = "skill-pill";
+        span.textContent = skill;
+        pvSkills.appendChild(span);
+      });
+    }
+
+    function updateBulletList(textareaId, ulId) {
+      const value = document.getElementById(textareaId).value;
+      const lines = value.split("\n").map(l => l.trim()).filter(Boolean);
+      const ul = document.getElementById(ulId);
+      ul.innerHTML = "";
+      lines.forEach(line => {
+        const li = document.createElement("li");
+        li.textContent = line;
+        ul.appendChild(li);
+      });
+    }
+
+    function updateField(key, value) {
+      const el = mapping[key];
+      if (!el) return;
+      el.innerHTML = value.replace(/\n/g, "<br>") || el.innerHTML;
+    }
+
+    // Attach listeners
+    document.querySelectorAll("[data-field]").forEach(input => {
+      const key = input.getAttribute("data-field");
+      input.addEventListener("input", () => {
+        if (["email","phone","location","linkedin","github","website"].includes(key)) {
+          updateContactAndLinks();
+        } else if (key === "skills") {
+          updateSkillsPills();
+        } else if (key === "keySkills") {
+          updateBulletList("keySkillsInput", "pvKeySkills");
+        } else if (key === "certifications") {
+          updateBulletList("certificationsInput", "pvCertifications");
+        } else if (key === "languages") {
+          updateBulletList("languagesInput", "pvLanguages");
+        } else if (["name","title","objective","experience","education","projects"].includes(key)) {
+          updateField(key, input.value);
+          if (key === "name") updateAvatar();
+        }
+      });
+    });
+
+    // Initial fill
+    updateContactAndLinks();
+    updateSkillsPills();
+    updateBulletList("keySkillsInput", "pvKeySkills");
+    updateBulletList("certificationsInput", "pvCertifications");
+    updateBulletList("languagesInput", "pvLanguages");
+    updateAvatar();
+
+    // ===== Theme switching =====
+    const themeSelect = document.getElementById("themeSelect");
+    const resumeWrapper = document.getElementById("resumeWrapper");
+    function applyTheme(theme) {
+      resumeWrapper.className = "resume-wrapper";
+      resumeWrapper.classList.add(`theme-${theme}`);
+    }
+    themeSelect.addEventListener("change", e => applyTheme(e.target.value));
+    applyTheme("classic");
+
+    // ===== PDF size presets =====
+    const sizeSelect = document.getElementById("sizeSelect");
+    const sizePresets = {
+      "2":  { scale: 1.0, jpegQuality: 0.55 }, // ~ up to ~2MB
+      "5":  { scale: 1.5, jpegQuality: 0.7  }, // ~2–5MB
+      "8":  { scale: 2.0, jpegQuality: 0.8  }, // ~4–8MB
+      "max":{ scale: 2.5, jpegQuality: 0.9  }  // max quality
+    };
+
+    document.getElementById("downloadBtn").addEventListener("click", async () => {
+      const preset = sizePresets[sizeSelect.value] || sizePresets["5"];
+      const { jsPDF } = window.jspdf;
+
+      const pdf = new jsPDF({
+        orientation: "p",
+        unit: "mm",
+        format: "a4",
+        compress: true
+      });
+
+      const originalTransform = resumeWrapper.style.transform;
+      const originalOrigin = resumeWrapper.style.transformOrigin;
+      resumeWrapper.style.transform = "scale(1)";
+      resumeWrapper.style.transformOrigin = "top left";
+
+      try {
+        const canvas = await html2canvas(resumeWrapper, {
+          scale: preset.scale,
+          useCORS: true,
+          backgroundColor: "#ffffff"
+        });
+
+        const imgData = canvas.toDataURL("image/jpeg", preset.jpegQuality);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight, undefined, "FAST");
+        pdf.save("resume.pdf");
+      } catch (err) {
+        console.error(err);
+        alert("Error generating PDF. Please try again.");
+      } finally {
+        resumeWrapper.style.transform = originalTransform;
+        resumeWrapper.style.transformOrigin = originalOrigin;
+      }
+    });
+  </script>
+</body>
+</html>
